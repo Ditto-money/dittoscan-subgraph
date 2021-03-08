@@ -1,22 +1,20 @@
-import { NewGravatar, UpdatedGravatar } from '../generated/Gravity/Gravity'
-import { Gravatar } from '../generated/schema'
+import { BigDecimal } from '@graphprotocol/graph-ts'
+import { Transfer } from '../generated/ERC20/ERC20'
+import { User } from '../generated/schema'
 
-export function handleNewGravatar(event: NewGravatar): void {
-  let gravatar = new Gravatar(event.params.id.toHex())
-  gravatar.owner = event.params.owner
-  gravatar.displayName = event.params.displayName
-  gravatar.imageUrl = event.params.imageUrl
-  gravatar.save()
-}
+let lpTokenAdress = '0x470BC451810B312BBb1256f96B0895D95eA659B1'
 
-export function handleUpdatedGravatar(event: UpdatedGravatar): void {
-  let id = event.params.id.toHex()
-  let gravatar = Gravatar.load(id)
-  if (gravatar == null) {
-    gravatar = new Gravatar(id)
+export function handleTransfer(event: Transfer): void {
+  if (event.params.to.toHexString() !== lpTokenAdress) return
+
+  let id = event.params.from.toHexString()
+  let user = User.load(id)
+  if (user == null) {
+    user = new User(id)
+    user.totalVolume = BigDecimal.fromString('0')
   }
-  gravatar.owner = event.params.owner
-  gravatar.displayName = event.params.displayName
-  gravatar.imageUrl = event.params.imageUrl
-  gravatar.save()
+
+  user.totalVolume = user.totalVolume.plus(event.params.value.toBigDecimal())
+
+  user.save()
 }
